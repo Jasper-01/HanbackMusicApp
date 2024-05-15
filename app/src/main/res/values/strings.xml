@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">HanbackMusicApp</string>
+    <string name="timerRstDisplayVal">00:00</string>
 </resources>

@@ -105,17 +105,17 @@ void updateTimerAndSegmentDisplay(JNIEnv *env, jobject instance, jobject textVie
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_hanbackmusicapp_MainActivity_startTimer(JNIEnv *env, jobject instance, jobject textView) {
+Java_com_example_hanbackmusicapp_MainActivity_startTimerNative(JNIEnv *env, jobject instance, jobject textView) {
     elapsedTimer.start();
     std::thread(updateTimerAndSegmentDisplay, env, instance, textView).detach();
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_hanbackmusicapp_MainActivity_pauseTimer(JNIEnv *env, jobject instance) {
+Java_com_example_hanbackmusicapp_MainActivity_pauseTimerNative(JNIEnv *env, jobject instance) {
     elapsedTimer.pause();
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_hanbackmusicapp_MainActivity_resetTimer(JNIEnv *env, jobject instance) {
+Java_com_example_hanbackmusicapp_MainActivity_resetTimerNative(JNIEnv *env, jobject instance) {
     elapsedTimer.pause();
 }
