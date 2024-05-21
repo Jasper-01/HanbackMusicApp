@@ -17,6 +17,7 @@ project("hanbackmusicapp")
 # Adds the additional source file to your project
 set(SOURCE_FILES
         native-lib.cpp
+        timer.cpp
         # Add your additional source file here
         )
 

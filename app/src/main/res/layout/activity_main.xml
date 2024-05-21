@@ -6,4 +6,45 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <TextView
+        android:id="@+id/timeElapsedDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/reset_timer_display"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@id/playPauseButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/playPauseButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:srcCompat="@drawable/ic_baseline_play_icon"
+        app:layout_constraintTop_toBottomOf="@id/timeElapsedDisplay"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/prevBtn"
+        app:layout_constraintEnd_toStartOf="@id/nextBtn"/>
+
+    <ImageButton
+        android:id="@+id/prevBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:srcCompat="@drawable/ic_baseline_skip_previous_icon"
+        app:layout_constraintTop_toTopOf="@id/playPauseButton"
+        app:layout_constraintBottom_toBottomOf="@id/playPauseButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/playPauseButton"/>
+
+    <ImageButton
+        android:id="@+id/nextBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:srcCompat="@drawable/ic_baseline_skip_next_icon"
+        app:layout_constraintTop_toTopOf="@id/playPauseButton"
+        app:layout_constraintBottom_toBottomOf="@id/playPauseButton"
+        app:layout_constraintStart_toEndOf="@id/playPauseButton"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
