@@ -17,7 +17,7 @@ project("hanbackmusicapp")
 # Adds the additional source file to your project
 set(SOURCE_FILES
         native-lib.cpp
-        segment.cpp  # Add your additional source file here
+        # Add your additional source file here
         )
 
 add_library( # Sets the name of the library.
