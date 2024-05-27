@@ -176,10 +176,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void VideoDisplay(String videoID) {
-//        String video = "<iframe width=\"100%\" height=\"100%\" " +
-//                "src=\"https://www.youtube.com/embed/" + videoID + "?autoplay=1" +
-//                "\" frameborder=\"0\" allowfullscreen></iframe>";
 
+        // TODO: figure out how to {autoplay + unmute}
         String video = "<html>" +
                 "<body style='margin:0;padding:0;'>" +
                 "<iframe id=\"player\" width=\"100%\" height=\"100%\" " +
@@ -197,7 +195,6 @@ public class MainActivity extends AppCompatActivity {
                 "}" +
                 "function onPlayerReady(event) {" +
                 "  event.target.playVideo();" +
-                //"  setTimeout(function() { event.target.unMute(); }, 1000);" + // test
                 "}" +
                 "function playVideo() {" +
                 "  player.playVideo();" +
