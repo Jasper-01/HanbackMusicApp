@@ -14,7 +14,8 @@ import com.example.hanbackmusicapp.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Boolean timerIsRunning;
+    /* variables */
+    private Boolean isRunning;
     private Handler timerHandler;
     private Runnable timerRunnable;
     private long pausedTimeElapsed;  // Variable to store the paused elapsed time
@@ -39,9 +40,9 @@ public class MainActivity extends AppCompatActivity {
         ImageButton prevBtn = findViewById(R.id.prevBtn);
         ImageButton nextBtn = findViewById(R.id.nextBtn);
 
-        // Initialize timer
+        /* Initialization */
         timerDisplay.setText(R.string.reset_timer_display);
-        timerIsRunning = false;
+        isRunning = false;
         pausedTimeElapsed = 0;
 
         // Timer handler and runnable to update the UI
@@ -50,15 +51,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 timerDisplay.setText(getElapsedTime());
-                if (timerIsRunning) {
+                if (isRunning) {
                     timerHandler.postDelayed(this, 1000);
                 }
             }
         };
 
-        // Button click listeners
+        /* Button Click Listeners*/
+        // play & pause Button
         playPauseBtn.setOnClickListener(view -> {
-            if (timerIsRunning) {
+            if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
                 stopTimer();
             } else {
@@ -66,27 +68,29 @@ public class MainActivity extends AppCompatActivity {
                 startTimer();
                 timerHandler.post(timerRunnable);
             }
-            timerIsRunning = !timerIsRunning;
+            isRunning = !isRunning;
         });
 
+        // previous Button
         prevBtn.setOnClickListener(view -> {
             resetTimer();
             timerDisplay.setText(R.string.reset_timer_display);
-            if (timerIsRunning) {
+            if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
                 timerHandler.removeCallbacks(timerRunnable);
-                timerIsRunning = false;
+                isRunning = false;
             }
             pausedTimeElapsed = 0;
         });
 
+        // next Button
         nextBtn.setOnClickListener(view -> {
             resetTimer();
             timerDisplay.setText(R.string.reset_timer_display);
-            if (timerIsRunning) {
+            if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
                 timerHandler.removeCallbacks(timerRunnable);
-                timerIsRunning = false;
+                isRunning = false;
             }
             pausedTimeElapsed = 0;
         });
