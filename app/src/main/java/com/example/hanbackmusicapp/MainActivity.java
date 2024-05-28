@@ -108,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
 
         /* Initialization */
         isRunning = true;
-//        isMute = true;
         isVisible = true;
         Log.d("Initialization", "timer complete");
         // webView
@@ -220,50 +219,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void VideoDisplay(String videoID) {
-
-        // TODO: figure out how to {autoplay + unmute}
-        String video = "<html>" +
-                "<body style='margin:0;padding:0;'>" +
-                "<iframe id=\"player\" width=\"100%\" height=\"100%\" " +
-                "src=\"https://www.youtube.com/embed/" + videoID + "?enablejsapi=1&autoplay=1&mute=1" +
-                "\" frameborder=\"0\" allowfullscreen></iframe>" +
-                "<script src=\"https://www.youtube.com/iframe_api\"></script>" +
-                "<script type=\"text/javascript\">" +
-                "var player;" +
-                "function onYouTubeIframeAPIReady() {" +
-                "  player = new YT.Player('player', {" +
-                "    events: {" +
-                "      'onReady': onPlayerReady" +
-                "    }" +
-                "  });" +
-                "}" +
-                "function onPlayerReady(event) {" +
-                "  event.target.playVideo();" +
-                "}" +
-                "function playVideo() {" +
-                "  player.playVideo();" +
-                "}" +
-                "function pauseVideo() {" +
-                "  player.pauseVideo();" +
-                //"  player.unMute();" +
-                "}" +
-                "function unMuteVideo() {" +
-                "  player.unMute();" +
-                "}" +
-                "function MuteVideo() {" +
-                "  player.mute();" +
-                "}" +
-                "</script>" +
-                "</body>" +
-                "</html>";
-        isRunning = true;
-        isMute = true;
-        webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
-    }
-
     /* Database functions */
-    // AsyncTask to fetch data from server
     private class FetchDataFromServerTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... voids) {
@@ -322,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Display current song's Title and Channel Name
+    /* Display current song's Title, Channel Name and video*/
     private void displayCurrentItem() {
         try {
             // Title and Channel Name Displays
@@ -333,7 +289,42 @@ public class MainActivity extends AppCompatActivity {
             String title = jsonObject.getString("title");
             String channelName = jsonObject.getString("channelName");
             String videoID = jsonObject.getString("videoId");
-            VideoDisplay(videoID);
+            String video = "<html>" +
+                    "<body style='margin:0;padding:0;'>" +
+                    "<iframe id=\"player\" width=\"100%\" height=\"100%\" " +
+                    "src=\"https://www.youtube.com/embed/" + videoID + "?enablejsapi=1&autoplay=1&mute=1" +
+                    "\" frameborder=\"0\" allowfullscreen></iframe>" +
+                    "<script src=\"https://www.youtube.com/iframe_api\"></script>" +
+                    "<script type=\"text/javascript\">" +
+                    "var player;" +
+                    "function onYouTubeIframeAPIReady() {" +
+                    "  player = new YT.Player('player', {" +
+                    "    events: {" +
+                    "      'onReady': onPlayerReady" +
+                    "    }" +
+                    "  });" +
+                    "}" +
+                    "function onPlayerReady(event) {" +
+                    "  event.target.playVideo();" +
+                    "}" +
+                    "function playVideo() {" +
+                    "  player.playVideo();" +
+                    "}" +
+                    "function pauseVideo() {" +
+                    "  player.pauseVideo();" +
+                    "}" +
+                    "function unMuteVideo() {" +
+                    "  player.unMute();" +
+                    "}" +
+                    "function MuteVideo() {" +
+                    "  player.mute();" +
+                    "}" +
+                    "</script>" +
+                    "</body>" +
+                    "</html>";
+            isRunning = true;
+            isMute = true;
+            webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
 
             // set texts
             titleDisplay.setText(title);
