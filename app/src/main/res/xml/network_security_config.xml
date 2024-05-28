@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!--TODO: Update address-->
+        <domain includeSubdomains="true">ec2-52-201-214-21.compute-1.amazonaws.com</domain>
+    </domain-config>
+</network-security-config>
