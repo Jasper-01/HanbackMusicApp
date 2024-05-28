@@ -1,4 +1,5 @@
 package com.example.hanbackmusicapp;
+// TODO: Sync timer with sound detection
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -7,12 +8,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.view.View;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,13 +29,24 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+/*
+TODO : Before starting app
+1. WiFi connection
+2. AWS activity
+3. Database activity
+4. Turning on server
+5. Check from browser
+6. Check if address is updated
+
+CHECK STATES DIPSHIT
+ */
 public class MainActivity extends AppCompatActivity {
 
     /* Tags */
     private static final String TAG = MainActivity.class.getSimpleName();
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-54-196-174-136.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-52-201-214-21.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
 
     // Timer
@@ -75,15 +84,11 @@ public class MainActivity extends AppCompatActivity {
         webVideo  = findViewById(R.id.webVid);
 
         /* Initialization */
-        isRunning = false;
-        // Timer
-        timerDisplay.setText(R.string.reset_timer_display);
-        pausedTimeElapsed = 0;
+        isRunning = true;
         Log.d("Initialization", "timer complete");
         // webView
         webVideo.setWebViewClient(new WebViewClient());
         webVideo.getSettings().setJavaScriptEnabled(true);
-        webVideo.addJavascriptInterface(new WebAppInterface(), "Android");
         webVideo.setWebChromeClient(new WebChromeClient());
         Log.d("Initialization", "webView complete");
         Log.d("Initialization", "ALL COMPLETED");
@@ -99,80 +104,67 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
+        playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
+        startTimer();
+        timerHandler.post(timerRunnable);
+        timerDisplay.setText(R.string.reset_timer_display);
+        pausedTimeElapsed = 0;
 
         // Database connection
         new FetchDataFromServerTask().execute();
 
-        /* Button Click Listeners*/     // TODO: To implement with database
+        /* Button Click Listeners*/
         // play & pause Button
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
+                webVideo.loadUrl("javascript:pauseVideo()");
+                Log.d("Pause/Play", "Pausing");
+                isRunning = false;
                 stopTimer();
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                startTimer();
+                webVideo.loadUrl("javascript:playVideo()");
+                Log.d("Pause/Play", "Playing");
+                isRunning = true;
                 timerHandler.post(timerRunnable);
+                startTimer();
             }
-            isRunning = !isRunning;
         });
 
         // previous Button
         prevBtn.setOnClickListener(view -> {
-            resetTimer();
-            timerDisplay.setText(R.string.reset_timer_display);
-            if (isRunning) {
-                playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
+            if (jsonArray != null && jsonArray.length() > 0) {
+                currentIndex--;
+                if (currentIndex < 0) {
+                    currentIndex = jsonArray.length() - 1;
+                }
+                displayCurrentItem();
+                pausedTimeElapsed = 0;
+                resetTimer();
+                startTimer();
+                timerDisplay.setText(R.string.reset_timer_display);
+                playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 timerHandler.removeCallbacks(timerRunnable);
-                isRunning = false;
             }
-            pausedTimeElapsed = 0;
         });
 
         // next Button
         nextBtn.setOnClickListener(view -> {
-            resetTimer();
-            timerDisplay.setText(R.string.reset_timer_display);
-            if (isRunning) {
-                playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                timerHandler.removeCallbacks(timerRunnable);
-                isRunning = false;
-            }
             pausedTimeElapsed = 0;
+            if (jsonArray != null && jsonArray.length() > 0) {
+                currentIndex++;
+                if (currentIndex >= jsonArray.length()) {
+                    currentIndex = 0;
+                }
+                displayCurrentItem();
+                playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
+                timerHandler.removeCallbacks(timerRunnable);
+                resetTimer();
+                startTimer();
+                timerDisplay.setText(R.string.reset_timer_display);
+            }
         });
-    }
-
-    public class WebAppInterface {
-        @JavascriptInterface
-        public void onPlayerReady() {
-            webVideo.post(new Runnable() {
-                @Override
-                public void run() {
-                    isRunning = true;
-                    Toast.makeText(MainActivity.this, "Player is ready and video is playing", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public void playVideo() {
-            webVideo.post(new Runnable() {
-                @Override
-                public void run() {
-                    webVideo.loadUrl("javascript:playVideo()");
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public void pauseVideo() {
-            webVideo.post(new Runnable() {
-                @Override
-                public void run() {
-                    webVideo.loadUrl("javascript:pauseVideo()");
-                }
-            });
-        }
     }
 
     public void VideoDisplay(String videoID) {
@@ -198,16 +190,16 @@ public class MainActivity extends AppCompatActivity {
                 "}" +
                 "function playVideo() {" +
                 "  player.playVideo();" +
+                "  player.unMute();" +
                 "}" +
                 "function pauseVideo() {" +
                 "  player.pauseVideo();" +
+                "  player.unMute();" +
                 "}" +
                 "</script>" +
                 "</body>" +
                 "</html>";
-        //webVideo.loadUrl("javascript:playVideo()");
         isRunning = true;
-        Toast.makeText(this, "playing", Toast.LENGTH_SHORT).show();
         webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
     }
 
