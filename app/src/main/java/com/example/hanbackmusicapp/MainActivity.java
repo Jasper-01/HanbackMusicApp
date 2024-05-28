@@ -59,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
     /* variables */
     private static final String SERVER_URL = "http://ec2-54-91-9-88.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
+    private Boolean isMute;
+    private Boolean isVisible;
 
     // Timer
     private Handler timerHandler;
@@ -97,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
         ImageButton playPauseBtn = findViewById(R.id.playPauseButton);
         ImageButton prevBtn = findViewById(R.id.prevBtn);
         ImageButton nextBtn = findViewById(R.id.nextBtn);
+        ImageButton muteBtn = findViewById(R.id.muteBtn);
+        ImageButton visualBtn = findViewById(R.id.visualizerBtn);
         // WebView
         webVideo = findViewById(R.id.webVid);
         // Visualizer
@@ -104,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
 
         /* Initialization */
         isRunning = true;
+//        isMute = true;
+        isVisible = true;
         Log.d("Initialization", "timer complete");
         // webView
         webVideo.setWebViewClient(new WebViewClient());
@@ -187,6 +193,31 @@ public class MainActivity extends AppCompatActivity {
                 timerDisplay.setText(R.string.reset_timer_display);
             }
         });
+
+        // mute Button
+        muteBtn.setOnClickListener(view -> {
+            if (isMute){
+                isMute = false;
+                muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
+                webVideo.loadUrl("javascript:unMuteVideo()");
+            } else{
+                isMute = true;
+                muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
+                webVideo.loadUrl("javascript:MuteVideo()");
+            }
+        });
+
+        // visualizer visibility Button
+        // TODO: add actual functions (to Jasper)
+        visualBtn.setOnClickListener(view -> {
+            if(isVisible){
+                isVisible = false;
+                visualBtn.setImageResource(R.drawable.baseline_visibility_off_visualizer_icon);
+            } else{
+                isVisible = true;
+                visualBtn.setImageResource(R.drawable.baseline_visibility_visualizer_icon);
+            }
+        });
     }
 
     public void VideoDisplay(String videoID) {
@@ -212,16 +243,22 @@ public class MainActivity extends AppCompatActivity {
                 "}" +
                 "function playVideo() {" +
                 "  player.playVideo();" +
-                "  player.unMute();" +
                 "}" +
                 "function pauseVideo() {" +
                 "  player.pauseVideo();" +
+                //"  player.unMute();" +
+                "}" +
+                "function unMuteVideo() {" +
                 "  player.unMute();" +
+                "}" +
+                "function MuteVideo() {" +
+                "  player.mute();" +
                 "}" +
                 "</script>" +
                 "</body>" +
                 "</html>";
         isRunning = true;
+        isMute = true;
         webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
     }
 
