@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-52-201-214-21.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-54-91-9-88.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
 
     // Timer
