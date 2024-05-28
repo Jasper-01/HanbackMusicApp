@@ -1,8 +1,14 @@
 package com.example.hanbackmusicapp;
 // TODO: Sync timer with sound detection
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,11 +22,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.hanbackmusicapp.databinding.ActivityMainBinding;
+import com.gauravk.audiovisualizer.visualizer.BarVisualizer;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,6 +34,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+import android.Manifest;
 
 /*
 TODO : Before starting app
@@ -45,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
     /* Tags */
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    /* Permission codes */
+    private static final int PERMISSION_REQUEST_CODE = 1;
+
     /* variables */
     private static final String SERVER_URL = "http://ec2-52-201-214-21.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
@@ -58,6 +69,12 @@ public class MainActivity extends AppCompatActivity {
     private JSONArray jsonArray;
     private int currentIndex = 0;
     private WebView webVideo;
+
+    // Visualizer
+    private BarVisualizer mVisualizer;
+    private AudioRecord audioRecord;
+    private Thread audioThread;
+    private boolean isRecording = false;
 
     // Used to load the 'hanbackmusicapp' library on application startup.
     static {
@@ -81,7 +98,9 @@ public class MainActivity extends AppCompatActivity {
         ImageButton prevBtn = findViewById(R.id.prevBtn);
         ImageButton nextBtn = findViewById(R.id.nextBtn);
         // WebView
-        webVideo  = findViewById(R.id.webVid);
+        webVideo = findViewById(R.id.webVid);
+        // Visualizer
+        mVisualizer = findViewById(R.id.visualizer);
 
         /* Initialization */
         isRunning = true;
@@ -112,6 +131,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Database connection
         new FetchDataFromServerTask().execute();
+
+        // Visualizer start
+        startAudioRecording();
 
         /* Button Click Listeners*/
         // play & pause Button
@@ -281,6 +303,62 @@ public class MainActivity extends AppCompatActivity {
             channelNameDisplay.setText(channelName);
         } catch (JSONException e) {
             Log.e(TAG, "Error displaying current item: " + e.getMessage());
+        }
+    }
+
+    /* Visualizer functions */
+    private void startAudioRecording() {
+//        int sampleRate = 44100;
+//        int sampleRate = 22050;
+//        int sampleRate = 16000;
+        int sampleRate = 11025;
+
+//        int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+            return;
+        } else{
+//            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT, bufferSize);
+        }
+
+        audioThread = new Thread(() -> {
+            byte[] buffer = new byte[bufferSize];
+            audioRecord.startRecording();
+            isRecording = true;
+            while (isRecording) {
+                int read = audioRecord.read(buffer, 0, buffer.length);
+                if (read > 0) {
+                    mVisualizer.setRawAudioBytes(buffer);
+                }
+            }
+        });
+
+        audioThread.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        isRecording = false;
+        if (audioRecord != null) {
+            audioRecord.stop();
+            audioRecord.release();
+        }
+    }
+
+    /* Permission Request */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startAudioRecording();
+            } else {
+                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

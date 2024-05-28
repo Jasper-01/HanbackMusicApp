@@ -6,6 +6,15 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <com.gauravk.audiovisualizer.visualizer.BarVisualizer
+        android:id="@+id/visualizer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:avColor="@color/av_dark_blue"
+        app:avDensity="0.5"
+        app:avSpeed="fast"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
     <WebView
         android:id="@+id/webVid"
         android:layout_width="match_parent"
