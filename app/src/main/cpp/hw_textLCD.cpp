@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <jni.h>
-#include "textLCDioctl.h"
+#include "h_textLCDioctl.h"
 #include <string.h>
 
 extern "C" JNIEXPORT void JNICALL

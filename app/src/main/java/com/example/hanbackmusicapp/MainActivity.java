@@ -156,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("Pause/Play", "Pausing");
                 isRunning = false;
                 stopTimer();
+                dotMatrixOut("Pausing");
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 webVideo.loadUrl("javascript:playVideo()");
@@ -163,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
                 isRunning = true;
                 timerHandler.post(timerRunnable);
                 startTimer();
+                dotMatrixOut("Playing");
             }
         });
 
@@ -180,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
                 timerDisplay.setText(R.string.reset_timer_display);
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 timerHandler.removeCallbacks(timerRunnable);
+                dotMatrixOut("Previous");
             }
         });
 
@@ -197,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
                 resetTimer();
                 startTimer();
                 timerDisplay.setText(R.string.reset_timer_display);
+                dotMatrixOut("Next");
             }
         });
 
@@ -206,10 +210,12 @@ public class MainActivity extends AppCompatActivity {
                 isMute = false;
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
                 webVideo.loadUrl("javascript:unMuteVideo()");
+                dotMatrixOut("Unmute");
             } else{
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
                 webVideo.loadUrl("javascript:MuteVideo()");
+                dotMatrixOut("Mute");
             }
         });
 
@@ -219,9 +225,11 @@ public class MainActivity extends AppCompatActivity {
             if(isVisible){
                 isVisible = false;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_off_visualizer_icon);
+                dotMatrixOut("Visualizer - Off");
             } else{
                 isVisible = true;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_visualizer_icon);
+                dotMatrixOut("Visualizer - On");
             }
         });
     }
@@ -428,4 +436,7 @@ public class MainActivity extends AppCompatActivity {
 
     // textLCD
     public native void textLCDout(String str1, String str2);
+
+    // dotMatrix
+    public native void dotMatrixOut(String str1);
 }
