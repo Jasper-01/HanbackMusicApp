@@ -5,8 +5,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
@@ -57,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-54-91-9-88.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-52-55-190-29.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
     private Boolean isMute;
     private Boolean isVisible;
@@ -91,6 +93,9 @@ public class MainActivity extends AppCompatActivity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        // TODO: test textLCD without database
+        textLCDout("title", "channelName");
 
         /* Displayed Objects */
         // TextView
@@ -139,7 +144,8 @@ public class MainActivity extends AppCompatActivity {
         new FetchDataFromServerTask().execute();
 
         // Visualizer start
-        startAudioRecording();
+        // TODO: watch out cus the device hates my ass
+//        startAudioRecording();
 
         /* Button Click Listeners*/
         // play & pause Button
@@ -338,6 +344,7 @@ public class MainActivity extends AppCompatActivity {
             // set texts
             titleDisplay.setText(title);
             channelNameDisplay.setText(channelName);
+            textLCDout(title, channelName);
         } catch (JSONException e) {
             Log.e(TAG, "Error displaying current item: " + e.getMessage());
         }
@@ -350,30 +357,45 @@ public class MainActivity extends AppCompatActivity {
 //        int sampleRate = 16000;
         int sampleRate = 11025;
 
-//        int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-        int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT);
+        int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+//        int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+        // Check if the buffer size is valid
+        if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
+            Log.e(TAG, "Invalid buffer size: " + bufferSize);
+            Toast.makeText(this, "Invalid audio buffer size", Toast.LENGTH_SHORT).show();
             return;
-        } else{
-//            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT, bufferSize);
         }
 
-        audioThread = new Thread(() -> {
-            byte[] buffer = new byte[bufferSize];
-            audioRecord.startRecording();
-            isRecording = true;
-            while (isRecording) {
-                int read = audioRecord.read(buffer, 0, buffer.length);
-                if (read > 0) {
-                    mVisualizer.setRawAudioBytes(buffer);
-                }
-            }
-        });
+        // Check if the microphone is available
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        if (!audioManager.isMicrophoneMute()) {
 
-        audioThread.start();
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+                return;
+            } else {
+//            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+                audioRecord = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT, bufferSize);
+            }
+
+            audioThread = new Thread(() -> {
+                byte[] buffer = new byte[bufferSize];
+                audioRecord.startRecording();
+                isRecording = true;
+                while (isRecording) {
+                    int read = audioRecord.read(buffer, 0, buffer.length);
+                    if (read > 0) {
+                        mVisualizer.setRawAudioBytes(buffer);
+                    }
+                }
+            });
+
+            audioThread.start();
+        } else {
+            Toast.makeText(this, "No audio input hardware found", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "No audio input hardware found");
+        }
     }
 
     @Override
@@ -403,4 +425,7 @@ public class MainActivity extends AppCompatActivity {
     public native void stopTimer();
     public native void resetTimer();
     public native String getElapsedTime();
+
+    // textLCD
+    public native void textLCDout(String str1, String str2);
 }

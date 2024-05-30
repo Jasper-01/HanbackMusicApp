@@ -18,6 +18,7 @@ project("hanbackmusicapp")
 set(SOURCE_FILES
         native-lib.cpp
         timer.cpp
+        hw_textLCD.cpp
         # Add your additional source file here
         )
 
