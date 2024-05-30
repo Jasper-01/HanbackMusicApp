@@ -94,6 +94,9 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // TODO: test textLCD without database
+        textLCDout("title", "channelName");
+
         /* Displayed Objects */
         // TextView
         TextView timerDisplay = findViewById(R.id.timeElapsedDisplay);
@@ -341,6 +344,7 @@ public class MainActivity extends AppCompatActivity {
             // set texts
             titleDisplay.setText(title);
             channelNameDisplay.setText(channelName);
+            textLCDout(title, channelName);
         } catch (JSONException e) {
             Log.e(TAG, "Error displaying current item: " + e.getMessage());
         }
@@ -421,4 +425,7 @@ public class MainActivity extends AppCompatActivity {
     public native void stopTimer();
     public native void resetTimer();
     public native String getElapsedTime();
+
+    // textLCD
+    public native void textLCDout(String str1, String str2);
 }
