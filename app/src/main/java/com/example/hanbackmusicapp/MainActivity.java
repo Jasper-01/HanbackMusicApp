@@ -289,9 +289,10 @@ public class MainActivity extends AppCompatActivity {
             String title = jsonObject.getString("title");
             String channelName = jsonObject.getString("channelName");
             String videoID = jsonObject.getString("videoId");
+
             String video = "<html>" +
                     "<body style='margin:0;padding:0;'>" +
-                    "<iframe id=\"player\" width=\"100%\" height=\"100%\" " +
+                    "<iframe id=\"player\" width=\"100%\" height=\"100%\" loading=\"lazy\"" +
                     "src=\"https://www.youtube.com/embed/" + videoID + "?enablejsapi=1&autoplay=1&mute=1" +
                     "\" frameborder=\"0\" allowfullscreen></iframe>" +
                     "<script src=\"https://www.youtube.com/iframe_api\"></script>" +
@@ -322,9 +323,11 @@ public class MainActivity extends AppCompatActivity {
                     "</script>" +
                     "</body>" +
                     "</html>";
+
+            webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
+
             isRunning = true;
             isMute = true;
-            webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
 
             // set texts
             titleDisplay.setText(title);
