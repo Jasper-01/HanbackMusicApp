@@ -79,6 +79,8 @@ public class MainActivity extends AppCompatActivity {
     private AudioRecord audioRecord;
     private Thread audioThread;
     private boolean isRecording = false;
+    private static int[] mSampleRates = new int[] { 44100, 22050, 16000, 11025, 8000 };
+
 
     // Used to load the 'hanbackmusicapp' library on application startup.
     static {
@@ -145,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Visualizer start
         // TODO: watch out cus the device hates my ass
-//        startAudioRecording();
+        startAudioRecording();
 
         /* Button Click Listeners*/
         // play & pause Button
@@ -156,7 +158,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("Pause/Play", "Pausing");
                 isRunning = false;
                 stopTimer();
-                dotMatrixOut("Pausing");
+                // TODO: phone X
+                 dotMatrixOut("Pausing");
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 webVideo.loadUrl("javascript:playVideo()");
@@ -164,7 +167,8 @@ public class MainActivity extends AppCompatActivity {
                 isRunning = true;
                 timerHandler.post(timerRunnable);
                 startTimer();
-                dotMatrixOut("Playing");
+//                 TODO: phone X
+                 dotMatrixOut("Playing");
             }
         });
 
@@ -182,7 +186,8 @@ public class MainActivity extends AppCompatActivity {
                 timerDisplay.setText(R.string.reset_timer_display);
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 timerHandler.removeCallbacks(timerRunnable);
-                dotMatrixOut("Previous");
+                // TODO: phone X
+                 dotMatrixOut("Previous");
             }
         });
 
@@ -200,7 +205,8 @@ public class MainActivity extends AppCompatActivity {
                 resetTimer();
                 startTimer();
                 timerDisplay.setText(R.string.reset_timer_display);
-                dotMatrixOut("Next");
+                // TODO: phone X
+                 dotMatrixOut("Next");
             }
         });
 
@@ -210,12 +216,14 @@ public class MainActivity extends AppCompatActivity {
                 isMute = false;
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
                 webVideo.loadUrl("javascript:unMuteVideo()");
-                dotMatrixOut("Unmute");
+                // TODO: phone X
+                 dotMatrixOut("Unmute");
             } else{
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
                 webVideo.loadUrl("javascript:MuteVideo()");
-                dotMatrixOut("Mute");
+                // TODO: phone X
+                 dotMatrixOut("Mute");
             }
         });
 
@@ -225,11 +233,13 @@ public class MainActivity extends AppCompatActivity {
             if(isVisible){
                 isVisible = false;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_off_visualizer_icon);
-                dotMatrixOut("Visualizer - Off");
+                // TODO: phone X
+                 dotMatrixOut("Visualizer - Off");
             } else{
                 isVisible = true;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_visualizer_icon);
-                dotMatrixOut("Visualizer - On");
+                // TODO: phone X
+                 dotMatrixOut("Visualizer - On");
             }
         });
     }
@@ -360,32 +370,32 @@ public class MainActivity extends AppCompatActivity {
 
     /* Visualizer functions */
     private void startAudioRecording() {
-//        int sampleRate = 44100;
-//        int sampleRate = 22050;
-//        int sampleRate = 16000;
         int sampleRate = 11025;
 
         int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-//        int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT);
 
-        // Check if the buffer size is valid
         if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
             Log.e(TAG, "Invalid buffer size: " + bufferSize);
             Toast.makeText(this, "Invalid audio buffer size", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Check if the microphone is available
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         if (!audioManager.isMicrophoneMute()) {
-
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
                 return;
             } else {
-//            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-                audioRecord = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_8BIT, bufferSize);
+                audioRecord = findAudioRecord();
             }
+
+            if (audioRecord == null || audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+                Log.e(TAG, "AudioRecord initialization failed");
+                Toast.makeText(this, "AudioRecord initialization failed", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Handler mainHandler = new Handler(Looper.getMainLooper());
 
             audioThread = new Thread(() -> {
                 byte[] buffer = new byte[bufferSize];
@@ -394,16 +404,88 @@ public class MainActivity extends AppCompatActivity {
                 while (isRecording) {
                     int read = audioRecord.read(buffer, 0, buffer.length);
                     if (read > 0) {
-                        mVisualizer.setRawAudioBytes(buffer);
+                        byte[] normalizedBuffer = normalizeAudioBuffer(buffer);
+                        byte[] smoothedBuffer = smoothAudioBuffer(normalizedBuffer);
+                        mainHandler.post(() -> mVisualizer.setRawAudioBytes(smoothedBuffer));
                     }
                 }
             });
 
             audioThread.start();
+            Log.d(TAG, "MIC WORKS");
         } else {
             Toast.makeText(this, "No audio input hardware found", Toast.LENGTH_SHORT).show();
             Log.e(TAG, "No audio input hardware found");
         }
+    }
+
+    private byte[] normalizeAudioBuffer(byte[] buffer) {
+        int maxAmplitude = 0;
+        for (byte b : buffer) {
+            int amplitude = Math.abs(b);
+            if (amplitude > maxAmplitude) {
+                maxAmplitude = amplitude;
+            }
+        }
+        if (maxAmplitude == 0) {
+            return buffer;
+        }
+        // TODO: phone X
+        float normalizationFactor = 280.0f / maxAmplitude;
+//        float normalizationFactor = 120.0f / maxAmplitude;
+        byte[] normalizedBuffer = new byte[buffer.length];
+        for (int i = 0; i < buffer.length; i++) {
+            normalizedBuffer[i] = (byte) (buffer[i] * normalizationFactor);
+        }
+        return normalizedBuffer;
+    }
+
+    private byte[] smoothAudioBuffer(byte[] buffer) {
+        byte[] smoothedBuffer = new byte[buffer.length];
+        int windowSize = 10; // Adjust the window size as needed
+        for (int i = 0; i < buffer.length; i++) {
+            int sum = 0;
+            int count = 0;
+            for (int j = i - windowSize; j <= i + windowSize; j++) {
+                if (j >= 0 && j < buffer.length) {
+                    sum += buffer[j];
+                    count++;
+                }
+            }
+            smoothedBuffer[i] = (byte) (sum / count);
+        }
+        return smoothedBuffer;
+    }
+
+    // Find sample rates
+    public AudioRecord findAudioRecord() {
+        for (int rate : mSampleRates) {
+            for (short audioFormat : new short[] { AudioFormat.ENCODING_PCM_8BIT, AudioFormat.ENCODING_PCM_16BIT }) {
+                for (short channelConfig : new short[] { AudioFormat.CHANNEL_IN_MONO, AudioFormat.CHANNEL_IN_STEREO }) {
+                    try {
+                        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+                            return null;
+                        } else {
+                            Log.d(TAG, "Attempting rate " + rate + "Hz, bits: " + audioFormat + ", channel: "
+                                    + channelConfig);
+                            int bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat);
+
+                            if (bufferSize != AudioRecord.ERROR_BAD_VALUE) {
+                                // check if we can instantiate and have a success
+                                AudioRecord recorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, rate, channelConfig, audioFormat, bufferSize);
+
+                                if (recorder.getState() == AudioRecord.STATE_INITIALIZED)
+                                    return recorder;
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, rate + "Exception, keep trying.",e);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -438,5 +520,6 @@ public class MainActivity extends AppCompatActivity {
     public native void textLCDout(String str1, String str2);
 
     // dotMatrix
+    // TODO: phone X
     public native void dotMatrixOut(String str1);
 }

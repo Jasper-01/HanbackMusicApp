@@ -9,10 +9,10 @@
     <com.gauravk.audiovisualizer.visualizer.BarVisualizer
         android:id="@+id/visualizer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="100dp"
         app:avColor="@color/av_dark_blue"
         app:avDensity="0.5"
-        app:avSpeed="fast"
+        app:avSpeed="normal"
         app:layout_constraintBottom_toBottomOf="parent" />
 
     <WebView
