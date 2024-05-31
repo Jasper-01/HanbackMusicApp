@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -237,11 +238,15 @@ public class MainActivity extends AppCompatActivity {
             if(isVisible){
                 isVisible = false;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_off_visualizer_icon);
+                stopAudioRecording();
+                mVisualizer.setVisibility(View.INVISIBLE);
                 // TODO: phone X
 //                 dotMatrixOut("Visualizer - Off");
             } else{
                 isVisible = true;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_visualizer_icon);
+                startAudioRecording();
+                mVisualizer.setVisibility(View.VISIBLE);
                 // TODO: phone X
 //                 dotMatrixOut("Visualizer - On");
             }
@@ -523,10 +528,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         isRecording = false;
-        if (audioRecord != null) {
-            audioRecord.stop();
-            audioRecord.release();
-        }
+        stopAudioRecording();
         if (mediaPlayer != null) {
             mediaPlayer.release();
             mediaPlayer = null;
