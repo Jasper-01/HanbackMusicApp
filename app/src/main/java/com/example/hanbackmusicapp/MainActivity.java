@@ -11,8 +11,6 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -57,14 +55,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-54-91-9-88.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-54-172-93-231.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
     private Boolean isMute;
     private Boolean isVisible;
 
-    // Timer
-    private Handler timerHandler;
-    private Runnable timerRunnable;
     private long pausedTimeElapsed;  // Variable to store the paused elapsed time
 
     // Database
@@ -93,8 +88,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         /* Displayed Objects */
-        // TextView
-        TextView timerDisplay = findViewById(R.id.timeElapsedDisplay);
         // Buttons
         ImageButton playPauseBtn = findViewById(R.id.playPauseButton);
         ImageButton prevBtn = findViewById(R.id.prevBtn);
@@ -117,45 +110,25 @@ public class MainActivity extends AppCompatActivity {
         Log.d("Initialization", "webView complete");
         Log.d("Initialization", "ALL COMPLETED");
 
-        // Timer handler and runnable to update the UI
-        timerHandler = new Handler(Looper.getMainLooper());
-        timerRunnable = new Runnable() {
-            @Override
-            public void run() {
-                timerDisplay.setText(getElapsedTime());
-                if (isRunning) {
-                    timerHandler.postDelayed(this, 1000);
-                }
-            }
-        };
-        playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-        startTimer();
-        timerHandler.post(timerRunnable);
-        timerDisplay.setText(R.string.reset_timer_display);
-        pausedTimeElapsed = 0;
-
         // Database connection
         new FetchDataFromServerTask().execute();
 
         // Visualizer start
-        startAudioRecording();
+        //startAudioRecording();
 
         /* Button Click Listeners*/
         // play & pause Button
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                webVideo.loadUrl("javascript:pauseVideo()");
+                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");
                 Log.d("Pause/Play", "Pausing");
                 isRunning = false;
-                stopTimer();
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                webVideo.loadUrl("javascript:playVideo()");
+                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').pause();");
                 Log.d("Pause/Play", "Playing");
                 isRunning = true;
-                timerHandler.post(timerRunnable);
-                startTimer();
             }
         });
 
@@ -167,18 +140,12 @@ public class MainActivity extends AppCompatActivity {
                     currentIndex = jsonArray.length() - 1;
                 }
                 displayCurrentItem();
-                pausedTimeElapsed = 0;
-                resetTimer();
-                startTimer();
-                timerDisplay.setText(R.string.reset_timer_display);
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                timerHandler.removeCallbacks(timerRunnable);
             }
         });
 
         // next Button
         nextBtn.setOnClickListener(view -> {
-            pausedTimeElapsed = 0;
             if (jsonArray != null && jsonArray.length() > 0) {
                 currentIndex++;
                 if (currentIndex >= jsonArray.length()) {
@@ -186,10 +153,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 displayCurrentItem();
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                timerHandler.removeCallbacks(timerRunnable);
-                resetTimer();
-                startTimer();
-                timerDisplay.setText(R.string.reset_timer_display);
             }
         });
 
@@ -198,11 +161,11 @@ public class MainActivity extends AppCompatActivity {
             if (isMute){
                 isMute = false;
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
-                webVideo.loadUrl("javascript:unMuteVideo()");
+                //webVideo.loadUrl("javascript:unMuteVideo()");
             } else{
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
-                webVideo.loadUrl("javascript:MuteVideo()");
+                //webVideo.loadUrl("javascript:MuteVideo()");
             }
         });
 
@@ -290,42 +253,16 @@ public class MainActivity extends AppCompatActivity {
             String channelName = jsonObject.getString("channelName");
             String videoID = jsonObject.getString("videoId");
 
-            String video = "<html>" +
-                    "<body style='margin:0;padding:0;'>" +
-                    "<iframe id=\"player\" width=\"100%\" height=\"100%\" loading=\"lazy\"" +
-                    "src=\"https://www.youtube.com/embed/" + videoID + "?enablejsapi=1&autoplay=1&mute=1" +
-                    "\" frameborder=\"0\" allowfullscreen></iframe>" +
-                    "<script src=\"https://www.youtube.com/iframe_api\"></script>" +
-                    "<script type=\"text/javascript\">" +
-                    "var player;" +
-                    "function onYouTubeIframeAPIReady() {" +
-                    "  player = new YT.Player('player', {" +
-                    "    events: {" +
-                    "      'onReady': onPlayerReady" +
-                    "    }" +
-                    "  });" +
-                    "}" +
-                    "function onPlayerReady(event) {" +
-                    "  event.target.playVideo();" +
-                    "}" +
-                    "function playVideo() {" +
-                    "  player.playVideo();" +
-                    "}" +
-                    "function pauseVideo() {" +
-                    "  player.pauseVideo();" +
-                    "}" +
-                    "function unMuteVideo() {" +
-                    "  player.unMute();" +
-                    "}" +
-                    "function MuteVideo() {" +
-                    "  player.mute();" +
-                    "}" +
-                    "</script>" +
-                    "</body>" +
-                    "</html>";
+            // Construct the HTML content with the dynamic video ID
+            String htmlContent = "<html><head>" +
+                    "<style> body, html { height: 100%; margin: 0; } </style>" +
+                    "</head><body style=\"display:flex; align-items:center; justify-content:center; height:100%;\">" +
+                    "<audio controls id=\"audioPlayer\" style=\"max-width: 100%; width: 100%;\">" +
+                    "<source src=\"http://ec2-54-172-93-231.compute-1.amazonaws.com:3000/play/" + videoID + "\" type=\"audio/mpeg\">" +
+                    "Your browser does not support the audio element.</audio></body></html>";
 
-            webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
-
+            // Load the HTML content into the WebView
+            webVideo.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
             isRunning = true;
             isMute = true;
 
@@ -386,15 +323,10 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startAudioRecording();
+                //startAudioRecording();
             } else {
                 Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
             }
         }
     }
-
-    public native void startTimer();
-    public native void stopTimer();
-    public native void resetTimer();
-    public native String getElapsedTime();
 }
