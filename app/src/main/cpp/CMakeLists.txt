@@ -16,7 +16,7 @@ project("hanbackmusicapp")
 
 # Adds the additional source file to your project
 set(SOURCE_FILES
-        timer.cpp
+#        timer.cpp
         hw_textLCD.cpp
         # TODO: phone X
 #        hw_dotMatrix.cpp
