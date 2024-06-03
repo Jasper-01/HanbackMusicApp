@@ -5,17 +5,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioRecord;
-import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.webkit.WebChromeClient;
@@ -61,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-34-201-94-108.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-54-204-254-47.compute-1.amazonaws.com:3000"; // TODO: Update address
     private Boolean isRunning;
     private Boolean isMute;
     private Boolean isVisible;
@@ -158,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
                 stopAudioRecording();
                 isRunning = false;
 //                stopTimer();
-                runDotMatrixInBackground("Pausing");
+//                runDotMatrixInBackground("Pausing");
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");Log.d("Pause/Play", "Playing");
@@ -166,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
 //                timerHandler.post(timerRunnable);
 //                startTimer();
                 startAudioRecording();
-                runDotMatrixInBackground("Playing");
+//                runDotMatrixInBackground("Playing");
             }
         });
 
@@ -184,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
 //                timerDisplay.setText(R.string.reset_timer_display);
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
 //                timerHandler.removeCallbacks(timerRunnable);
-                runDotMatrixInBackground("Previous");
+//                runDotMatrixInBackground("Previous");
             }
         });
 
@@ -202,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
 //                resetTimer();
 //                startTimer();
 //                timerDisplay.setText(R.string.reset_timer_display);
-                runDotMatrixInBackground("Next");
+//                runDotMatrixInBackground("Next");
             }
         });
 
@@ -212,12 +207,12 @@ public class MainActivity extends AppCompatActivity {
                 isMute = false;
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
 //                webVideo.loadUrl("javascript:unMuteVideo()");
-                runDotMatrixInBackground("Unmute");
+//                runDotMatrixInBackground("Unmute");
             } else{
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
 //                webVideo.loadUrl("javascript:MuteVideo()");
-                runDotMatrixInBackground("Mute");
+//                runDotMatrixInBackground("Mute");
             }
         });
 
@@ -228,13 +223,13 @@ public class MainActivity extends AppCompatActivity {
                 visualBtn.setImageResource(R.drawable.baseline_visibility_off_visualizer_icon);
                 stopAudioRecording();
                 mVisualizer.setVisibility(View.INVISIBLE);
-                runDotMatrixInBackground("Visualizer - Off");
+//                runDotMatrixInBackground("Visualizer - Off");
             } else{
                 isVisible = true;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_visualizer_icon);
                 startAudioRecording();
                 mVisualizer.setVisibility(View.VISIBLE);
-                runDotMatrixInBackground("Visualizer - On");
+//                runDotMatrixInBackground("Visualizer - On");
             }
         });
     }
@@ -518,31 +513,11 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         isRecording = false;
         stopAudioRecording();
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
     }
 
-    private class StreamAudioTask extends AsyncTask<String, Void, Void> {
-        @Override
-        protected Void doInBackground(String... urls) {
-            String url = urls[0];
-            mediaPlayer = new MediaPlayer();
-            try {
-                mediaPlayer.setDataSource(url);
-                mediaPlayer.prepare(); // Prepare the player synchronously
-                mediaPlayer.start();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    private void runDotMatrixInBackground(final String message) {
-        new Thread(() -> dotMatrixOut(message)).start();
-    }
+//    private void runDotMatrixInBackground(final String message) {
+//        new Thread(() -> dotMatrixOut(message)).start();
+//    }
 
 //    public native void startTimer();
 //    public native void stopTimer();
@@ -553,5 +528,5 @@ public class MainActivity extends AppCompatActivity {
     public native void textLCDout(String str1, String str2);
 
     // dotMatrix
-    public native void dotMatrixOut(String str1);
+//    public native void dotMatrixOut(String str1);
 }
