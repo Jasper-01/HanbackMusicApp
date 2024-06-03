@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-54-172-93-231.compute-1.amazonaws.com:3000"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-3-80-222-203.compute-1.amazonaws.com:3000"; // TODO: Update address
     private Boolean isRunning;
 
     // Database
@@ -73,14 +73,16 @@ public class MainActivity extends AppCompatActivity {
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').pause();");
+                //webVideo.loadUrl("javascript:document.getElementById('audioPlayer').pause();");
                 Log.d("Pause/Play", "Pausing");
+                webVideo.loadUrl("javascript:pauseAudio()");
                 isRunning = false;
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");
+                //webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");
                 Log.d("Pause/Play", "Playing");
                 isRunning = true;
+                webVideo.loadUrl("javascript:playAudio()");
             }
         });
 
@@ -189,11 +191,13 @@ public class MainActivity extends AppCompatActivity {
                     "<audio controls id=\"audioPlayer\">" +
                     "<source src=\""+SERVER_URL+"/play/" + videoID + "\" type=\"audio/mpeg\">" +
                     "Your browser does not support the audio element.</audio></body></html>";
+            //webVideo.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
 
-            // Load the HTML content into the WebView
-            webVideo.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
+            String url = SERVER_URL+ "/audio/" + videoID;
+            //http://ec2-3-80-222-203.compute-1.amazonaws.com:3000/audio/MB3VkzPdgLA
+            webVideo.loadUrl(url);
+
             isRunning = false;
-
             // set texts
             titleDisplay.setText(title);
             channelNameDisplay.setText(channelName);
