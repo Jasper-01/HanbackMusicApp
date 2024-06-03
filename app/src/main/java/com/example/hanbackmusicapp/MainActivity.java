@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-54-147-133-248.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-34-201-94-108.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
     private Boolean isMute;
     private Boolean isVisible;
@@ -75,7 +75,6 @@ public class MainActivity extends AppCompatActivity {
     private JSONArray jsonArray;
     private int currentIndex = 0;
     private WebView webVideo;
-    private MediaPlayer mediaPlayer;
 
     // Visualizer
     private BarVisualizer mVisualizer;
@@ -98,7 +97,6 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // TODO: test textLCD without database
         textLCDout("title", "channelName");
 
         /* Displayed Objects */
@@ -111,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         ImageButton muteBtn = findViewById(R.id.muteBtn);
         ImageButton visualBtn = findViewById(R.id.visualizerBtn);
         // WebView
-//        webVideo = findViewById(R.id.webVid);
+        webVideo = findViewById(R.id.webVid);
         // Visualizer
         mVisualizer = findViewById(R.id.visualizer);
 
@@ -121,9 +119,9 @@ public class MainActivity extends AppCompatActivity {
         isVisible = true;
         playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
         // webView
-//        webVideo.setWebViewClient(new WebViewClient());
-//        webVideo.getSettings().setJavaScriptEnabled(true);
-//        webVideo.setWebChromeClient(new WebChromeClient());
+        webVideo.setWebViewClient(new WebViewClient());
+        webVideo.getSettings().setJavaScriptEnabled(true);
+        webVideo.setWebChromeClient(new WebChromeClient());
 
         Log.d("Initialization", "webView complete");
         Log.d("Initialization", "ALL COMPLETED");
@@ -149,7 +147,6 @@ public class MainActivity extends AppCompatActivity {
         new FetchDataFromServerTask().execute();
 
         // Visualizer start
-        // TODO: watch out cus the device hates my ass
         startAudioRecording();
 
         /* Button Click Listeners*/
@@ -157,23 +154,19 @@ public class MainActivity extends AppCompatActivity {
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-//                webVideo.loadUrl("javascript:pauseVideo()");
-                Log.d("Pause/Play", "Pausing");
+                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').pause();");Log.d("Pause/Play", "Pausing");
+                stopAudioRecording();
                 isRunning = false;
 //                stopTimer();
-                // TODO: phone X
-//                 dotMatrixOut("Pausing");
-                String audioUrl = SERVER_URL + "stream-audio?url=https://youtu.be/u_n7GaTaQnM?list=PLFv6N9sB8K3se2b7MHqQQ7SK8fBKHW83P";
-                new StreamAudioTask().execute(audioUrl);
+                runDotMatrixInBackground("Pausing");
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-//                webVideo.loadUrl("javascript:playVideo()");
-                Log.d("Pause/Play", "Playing");
+                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");Log.d("Pause/Play", "Playing");
                 isRunning = true;
 //                timerHandler.post(timerRunnable);
 //                startTimer();
-//                 TODO: phone X
-//                 dotMatrixOut("Playing");
+                startAudioRecording();
+                runDotMatrixInBackground("Playing");
             }
         });
 
@@ -191,8 +184,7 @@ public class MainActivity extends AppCompatActivity {
 //                timerDisplay.setText(R.string.reset_timer_display);
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
 //                timerHandler.removeCallbacks(timerRunnable);
-                // TODO: phone X
-//                 dotMatrixOut("Previous");
+                runDotMatrixInBackground("Previous");
             }
         });
 
@@ -210,8 +202,7 @@ public class MainActivity extends AppCompatActivity {
 //                resetTimer();
 //                startTimer();
 //                timerDisplay.setText(R.string.reset_timer_display);
-                // TODO: phone X
-//                 dotMatrixOut("Next");
+                runDotMatrixInBackground("Next");
             }
         });
 
@@ -221,34 +212,29 @@ public class MainActivity extends AppCompatActivity {
                 isMute = false;
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
 //                webVideo.loadUrl("javascript:unMuteVideo()");
-                // TODO: phone X
-//                 dotMatrixOut("Unmute");
+                runDotMatrixInBackground("Unmute");
             } else{
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
 //                webVideo.loadUrl("javascript:MuteVideo()");
-                // TODO: phone X
-//                 dotMatrixOut("Mute");
+                runDotMatrixInBackground("Mute");
             }
         });
 
         // visualizer visibility Button
-        // TODO: add actual functions (to Jasper)
         visualBtn.setOnClickListener(view -> {
             if(isVisible){
                 isVisible = false;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_off_visualizer_icon);
                 stopAudioRecording();
                 mVisualizer.setVisibility(View.INVISIBLE);
-                // TODO: phone X
-//                 dotMatrixOut("Visualizer - Off");
+                runDotMatrixInBackground("Visualizer - Off");
             } else{
                 isVisible = true;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_visualizer_icon);
                 startAudioRecording();
                 mVisualizer.setVisibility(View.VISIBLE);
-                // TODO: phone X
-//                 dotMatrixOut("Visualizer - On");
+                runDotMatrixInBackground("Visualizer - On");
             }
         });
     }
@@ -305,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
             BufferedReader reader = null;
 
             try {
-                URL url = new URL(SERVER_URL);
+                URL url = new URL(SERVER_URL+"/data");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
 
@@ -355,7 +341,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Display current song's Title and Channel Name
+    // Display current song's Title, Channel Name and video
     private void displayCurrentItem() {
         try {
             // Title and Channel Name Displays
@@ -366,21 +352,24 @@ public class MainActivity extends AppCompatActivity {
             String title = jsonObject.getString("title");
             String channelName = jsonObject.getString("channelName");
             String videoID = jsonObject.getString("videoId");
-            String ytURL = jsonObject.getString("url");
-//            VideoDisplay(videoID);
-            try {
-                // TODO: test optimization
-                String audioUrl = SERVER_URL + "/stream-audio?url=" + ytURL;
-                new StreamAudioTask().execute(audioUrl);
-            } catch (Exception e){
-                Log.e(TAG, "Unable to play audio:" + e.getMessage());
-            }
 
+            // Construct the HTML content with the dynamic video ID
+            String htmlContent = "<html><head>" +
+                    "<style> body, html { height: 100%; margin: 0; }" +
+                    "audio { width: 100%; height: 100%; }" + // Ensures the audio element fills the WebView
+                    "</style>" +
+                    "</head><body style=\"display:flex; align-items:center; justify-content:center; height:100%;\">" +
+                    "<audio controls id=\"audioPlayer\">" +
+                    "<source src=\""+SERVER_URL+"/play/" + videoID + "\" type=\"audio/mpeg\">" +
+                    "Your browser does not support the audio element.</audio></body></html>";
+
+            // Load the HTML content into the WebView
+            webVideo.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
+            isRunning = false;
 
             // set texts
             titleDisplay.setText(title);
             channelNameDisplay.setText(channelName);
-            textLCDout(title, channelName);
         } catch (JSONException e) {
             Log.e(TAG, "Error displaying current item: " + e.getMessage());
         }
@@ -551,6 +540,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void runDotMatrixInBackground(final String message) {
+        new Thread(() -> dotMatrixOut(message)).start();
+    }
+
 //    public native void startTimer();
 //    public native void stopTimer();
 //    public native void resetTimer();
@@ -560,6 +553,5 @@ public class MainActivity extends AppCompatActivity {
     public native void textLCDout(String str1, String str2);
 
     // dotMatrix
-    // TODO: phone X
     public native void dotMatrixOut(String str1);
 }
