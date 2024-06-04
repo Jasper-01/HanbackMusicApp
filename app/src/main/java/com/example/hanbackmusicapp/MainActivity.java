@@ -8,6 +8,7 @@ import androidx.core.app.ActivityCompat;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -17,6 +18,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
+import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +37,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import android.Manifest;
+import android.widget.VideoView;
 
 /*
 TODO : Before starting app
@@ -69,7 +72,10 @@ public class MainActivity extends AppCompatActivity {
     // Database
     private JSONArray jsonArray;
     private int currentIndex = 0;
-    private WebView webVideo;
+
+    // Media Player
+    private VideoView mediaPlayer;
+    private MediaPlayer mediaPlayerControl;
 
     // Visualizer
     private BarVisualizer mVisualizer;
@@ -104,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
         ImageButton muteBtn = findViewById(R.id.muteBtn);
         ImageButton visualBtn = findViewById(R.id.visualizerBtn);
         // WebView
-        webVideo = findViewById(R.id.webVid);
+        mediaPlayer = findViewById(R.id.player);
         // Visualizer
         mVisualizer = findViewById(R.id.visualizer);
 
@@ -114,9 +120,15 @@ public class MainActivity extends AppCompatActivity {
         isVisible = true;
         playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
         // webView
-        webVideo.setWebViewClient(new WebViewClient());
-        webVideo.getSettings().setJavaScriptEnabled(true);
-        webVideo.setWebChromeClient(new WebChromeClient());
+//        webVideo.setWebViewClient(new WebViewClient());
+//        webVideo.getSettings().setJavaScriptEnabled(true);
+//        webVideo.setWebChromeClient(new WebChromeClient());
+        // MediaController for VideoView
+        MediaController mediaController = new MediaController(this);
+        mediaPlayer.setMediaController(mediaController);
+
+        // Set OnPreparedListener to get MediaPlayer instance
+        mediaPlayer.setOnPreparedListener(mp -> mediaPlayerControl = mp);
 
         Log.d("Initialization", "webView complete");
         Log.d("Initialization", "ALL COMPLETED");
@@ -149,14 +161,18 @@ public class MainActivity extends AppCompatActivity {
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').pause();");Log.d("Pause/Play", "Pausing");
+//                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').pause();");
+                mediaPlayer.pause();
+                Log.d("Pause/Play", "Pausing");
                 stopAudioRecording();
                 isRunning = false;
 //                stopTimer();
-                runDotMatrixInBackground("Pausing");
+//                runDotMatrixInBackground("Pausing");
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");Log.d("Pause/Play", "Playing");
+//                webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");
+                mediaPlayer.start();
+                Log.d("Pause/Play", "Playing");
                 isRunning = true;
 //                timerHandler.post(timerRunnable);
 //                startTimer();
@@ -208,11 +224,13 @@ public class MainActivity extends AppCompatActivity {
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
 //                webVideo.loadUrl("javascript:unMuteVideo()");
                 runDotMatrixInBackground("Unmute");
+                unmuteVolume();
             } else{
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
 //                webVideo.loadUrl("javascript:MuteVideo()");
                 runDotMatrixInBackground("Mute");
+                muteVolume();
             }
         });
 
@@ -273,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
                 "</html>";
         isRunning = true;
         isMute = true;
-        webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
+//        webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
     }
 
     /* Database functions */
@@ -349,17 +367,22 @@ public class MainActivity extends AppCompatActivity {
             String videoID = jsonObject.getString("videoId");
 
             // Construct the HTML content with the dynamic video ID
-            String htmlContent = "<html><head>" +
-                    "<style> body, html { height: 100%; margin: 0; }" +
-                    "audio { width: 100%; height: 100%; }" + // Ensures the audio element fills the WebView
-                    "</style>" +
-                    "</head><body style=\"display:flex; align-items:center; justify-content:center; height:100%;\">" +
-                    "<audio controls id=\"audioPlayer\">" +
-                    "<source src=\""+SERVER_URL+"/play/" + videoID + "\" type=\"audio/mpeg\">" +
-                    "Your browser does not support the audio element.</audio></body></html>";
+//            String htmlContent = "<html><head>" +
+//                    "<style> body, html { height: 100%; margin: 0; }" +
+//                    "audio { width: 100%; height: 100%; }" + // Ensures the audio element fills the WebView
+//                    "</style>" +
+//                    "</head><body style=\"display:flex; align-items:center; justify-content:center; height:100%;\">" +
+//                    "<audio controls id=\"audioPlayer\">" +
+//                    "<source src=\""+SERVER_URL+"/play/" + videoID + "\" type=\"audio/mpeg\">" +
+//                    "Your browser does not support the audio element.</audio></body></html>";
 
             // Load the HTML content into the WebView
-            webVideo.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
+//            webVideo.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
+
+            // media player
+            mediaPlayer.setVideoPath(videoUrl);
+            mediaPlayer.start();
+
             isRunning = false;
 
             // set texts
@@ -513,10 +536,27 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         isRecording = false;
         stopAudioRecording();
+        if (mediaPlayerControl != null) {
+            mediaPlayerControl.release();
+            mediaPlayerControl = null;
+        }
     }
 
     private void runDotMatrixInBackground(final String message) {
         new Thread(() -> dotMatrixOut(message)).start();
+    }
+
+    /* Media Player functions*/
+    private void muteVolume() {
+        if (mediaPlayerControl != null) {
+            mediaPlayerControl.setVolume(0, 0);
+        }
+    }
+
+    private void unmuteVolume() {
+        if (mediaPlayerControl != null) {
+            mediaPlayerControl.setVolume(1, 1);
+        }
     }
 
 //    public native void startTimer();
