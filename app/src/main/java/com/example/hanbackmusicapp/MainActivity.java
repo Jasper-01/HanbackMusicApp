@@ -153,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
                 stopAudioRecording();
                 isRunning = false;
 //                stopTimer();
-//                runDotMatrixInBackground("Pausing");
+                runDotMatrixInBackground("Pausing");
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");Log.d("Pause/Play", "Playing");
@@ -161,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
 //                timerHandler.post(timerRunnable);
 //                startTimer();
                 startAudioRecording();
-//                runDotMatrixInBackground("Playing");
+                runDotMatrixInBackground("Playing");
             }
         });
 
@@ -207,12 +207,12 @@ public class MainActivity extends AppCompatActivity {
                 isMute = false;
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
 //                webVideo.loadUrl("javascript:unMuteVideo()");
-//                runDotMatrixInBackground("Unmute");
+                runDotMatrixInBackground("Unmute");
             } else{
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
 //                webVideo.loadUrl("javascript:MuteVideo()");
-//                runDotMatrixInBackground("Mute");
+                runDotMatrixInBackground("Mute");
             }
         });
 
@@ -223,13 +223,13 @@ public class MainActivity extends AppCompatActivity {
                 visualBtn.setImageResource(R.drawable.baseline_visibility_off_visualizer_icon);
                 stopAudioRecording();
                 mVisualizer.setVisibility(View.INVISIBLE);
-//                runDotMatrixInBackground("Visualizer - Off");
+                runDotMatrixInBackground("Visualizer - Off");
             } else{
                 isVisible = true;
                 visualBtn.setImageResource(R.drawable.baseline_visibility_visualizer_icon);
                 startAudioRecording();
                 mVisualizer.setVisibility(View.VISIBLE);
-//                runDotMatrixInBackground("Visualizer - On");
+                runDotMatrixInBackground("Visualizer - On");
             }
         });
     }
@@ -515,9 +515,9 @@ public class MainActivity extends AppCompatActivity {
         stopAudioRecording();
     }
 
-//    private void runDotMatrixInBackground(final String message) {
-//        new Thread(() -> dotMatrixOut(message)).start();
-//    }
+    private void runDotMatrixInBackground(final String message) {
+        new Thread(() -> dotMatrixOut(message)).start();
+    }
 
 //    public native void startTimer();
 //    public native void stopTimer();
@@ -528,5 +528,5 @@ public class MainActivity extends AppCompatActivity {
     public native void textLCDout(String str1, String str2);
 
     // dotMatrix
-//    public native void dotMatrixOut(String str1);
+    public native void dotMatrixOut(String str1);
 }
