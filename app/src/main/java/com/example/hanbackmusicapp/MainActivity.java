@@ -1,14 +1,21 @@
 package com.example.hanbackmusicapp;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.hanbackmusicapp.databinding.ActivityMainBinding;
 
@@ -17,27 +24,55 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;import android.Manifest;
+import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import com.example.hanbackmusicapp.databinding.ActivityMainBinding;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-
 public class MainActivity extends AppCompatActivity {
 
-    /* Tags */
     private static final String TAG = MainActivity.class.getSimpleName();
-
-    /* variables */
-    private static final String SERVER_URL = "http://ec2-3-80-222-203.compute-1.amazonaws.com:3000"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-3-80-50-248.compute-1.amazonaws.com:3000";
     private Boolean isRunning;
+    private MediaPlayer mediaPlayer;
+    private String currentAudioPath;
+    private Context context;
 
     // Database
     private JSONArray jsonArray;
     private int currentIndex = 0;
-    private WebView webVideo;
 
-    // Used to load the 'hanbackmusicapp' library on application startup.
     static {
         System.loadLibrary("hanbackmusicapp");
     }
@@ -48,45 +83,36 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        context = this;
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        /* Displayed Objects */
-        // Buttons
+        // Request necessary permissions
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+        } else {
+            new FetchDataFromServerTask().execute();
+        }
+
         ImageButton playPauseBtn = findViewById(R.id.playPauseButton);
         ImageButton prevBtn = findViewById(R.id.prevBtn);
         ImageButton nextBtn = findViewById(R.id.nextBtn);
-        // WebView
-        webVideo = findViewById(R.id.webVid);
 
-        /* Initialization */
-        webVideo.setWebViewClient(new WebViewClient());
-        webVideo.getSettings().setJavaScriptEnabled(true);
-        webVideo.setWebChromeClient(new WebChromeClient());
         Log.d("Initialization", "ALL COMPLETED");
 
-        // Database connection
-        new FetchDataFromServerTask().execute();
-
-        /* Button Click Listeners*/
-        // play & pause Button
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                //webVideo.loadUrl("javascript:document.getElementById('audioPlayer').pause();");
-                Log.d("Pause/Play", "Pausing");
-                webVideo.loadUrl("javascript:pauseAudio()");
+                pauseAudio();
                 isRunning = false;
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                //webVideo.loadUrl("javascript:document.getElementById('audioPlayer').play();");
-                Log.d("Pause/Play", "Playing");
+                playAudio();
                 isRunning = true;
-                webVideo.loadUrl("javascript:playAudio()");
             }
         });
 
-        // previous Button
         prevBtn.setOnClickListener(view -> {
             if (jsonArray != null && jsonArray.length() > 0) {
                 currentIndex--;
@@ -98,7 +124,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // next Button
         nextBtn.setOnClickListener(view -> {
             if (jsonArray != null && jsonArray.length() > 0) {
                 currentIndex++;
@@ -111,7 +136,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /* Database functions */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 1) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                new FetchDataFromServerTask().execute();
+            } else {
+                Toast.makeText(this, "Permissions required to download and play audio", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private class FetchDataFromServerTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... voids) {
@@ -120,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
             BufferedReader reader = null;
 
             try {
-                URL url = new URL(SERVER_URL+"/data");
+                URL url = new URL(SERVER_URL + "/data");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
 
@@ -170,10 +206,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /* Display current song's Title, Channel Name and video*/
     private void displayCurrentItem() {
         try {
-            // Title and Channel Name Displays
             TextView titleDisplay = findViewById(R.id.titleDisplay);
             TextView channelNameDisplay = findViewById(R.id.channelNameDisplay);
 
@@ -182,27 +216,104 @@ public class MainActivity extends AppCompatActivity {
             String channelName = jsonObject.getString("channelName");
             String videoID = jsonObject.getString("videoId");
 
-            // Construct the HTML content with the dynamic video ID
-            String htmlContent = "<html><head>" +
-                    "<style> body, html { height: 100%; margin: 0; }" +
-                    "audio { width: 100%; height: 100%; }" + // Ensures the audio element fills the WebView
-                    "</style>" +
-                    "</head><body style=\"display:flex; align-items:center; justify-content:center; height:100%;\">" +
-                    "<audio controls id=\"audioPlayer\">" +
-                    "<source src=\""+SERVER_URL+"/play/" + videoID + "\" type=\"audio/mpeg\">" +
-                    "Your browser does not support the audio element.</audio></body></html>";
-            //webVideo.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null);
-
-            String url = SERVER_URL+ "/audio/" + videoID;
-            //http://ec2-3-80-222-203.compute-1.amazonaws.com:3000/audio/MB3VkzPdgLA
-            webVideo.loadUrl(url);
-
-            isRunning = false;
-            // set texts
             titleDisplay.setText(title);
             channelNameDisplay.setText(channelName);
+
+            downloadAudioFile(videoID);
+
+            isRunning = false;
         } catch (JSONException e) {
             Log.e(TAG, "Error displaying current item: " + e.getMessage());
+        }
+    }
+
+    private void downloadAudioFile(String videoID) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(SERVER_URL + "/play/" + videoID);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                File sdcard = Environment.getExternalStorageDirectory();
+                File file = new File(sdcard, videoID + ".mp3");
+
+                FileOutputStream fileOutput = new FileOutputStream(file);
+                InputStream inputStream = urlConnection.getInputStream();
+
+                byte[] buffer = new byte[1024];
+                int bufferLength;
+
+                while ((bufferLength = inputStream.read(buffer)) > 0) {
+                    fileOutput.write(buffer, 0, bufferLength);
+                }
+                fileOutput.close();
+
+                Log.d("DownloadAudioFile", "File downloaded to: " + file.getPath());
+
+                runOnUiThread(() -> {
+                    currentAudioPath = file.getPath();
+                    playAudio();
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Download Failed", Toast.LENGTH_SHORT).show());
+            }
+        }).start();
+    }
+
+    private void playAudio() {
+        try {
+            if (mediaPlayer != null) {
+                mediaPlayer.reset();
+                mediaPlayer.release();
+            }
+
+            File file = new File(currentAudioPath);
+            if (!file.exists()) {
+                Log.e(TAG, "File not found: " + currentAudioPath);
+                Toast.makeText(this, "Audio file not found", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Log.d(TAG, "Playing audio file: " + file.getAbsolutePath());
+
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setDataSource(file.getPath());
+
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    mediaPlayer.start();
+                    isRunning = true;
+
+                    ImageButton playPauseBtn = findViewById(R.id.playPauseButton);
+                    playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
+                }
+            });
+            mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.e(TAG, "MediaPlayer error: " + what + ", extra: " + extra);
+                    Toast.makeText(MainActivity.this, "Error playing audio", Toast.LENGTH_SHORT).show();
+                    return false; // Return true if the error is handled, false otherwise
+                }
+            });
+            mediaPlayer.prepareAsync(); // Use prepareAsync for asynchronous preparation
+        } catch (IOException e) {
+            Log.e(TAG, "IOException while playing audio: " + e.getMessage());
+            Toast.makeText(this, "Error playing audio", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing audio: " + e.getMessage());
+            Toast.makeText(this, "Error playing audio", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+
+    private void pauseAudio() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
         }
     }
 }
