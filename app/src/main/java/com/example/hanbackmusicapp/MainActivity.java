@@ -1,8 +1,6 @@
 package com.example.hanbackmusicapp;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -10,34 +8,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
-import android.webkit.WebChromeClient;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.ImageButton;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import com.example.hanbackmusicapp.databinding.ActivityMainBinding;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;import android.Manifest;
-import android.content.pm.PackageManager;
-import android.media.MediaPlayer;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
-import android.view.View;
-import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -60,30 +33,36 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+import nl.changer.audiowife.AudioWife;
+
 public class MainActivity extends AppCompatActivity {
 
+    Context mContext = MainActivity.this;
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final String SERVER_URL = "http://ec2-3-80-50-248.compute-1.amazonaws.com:3000";
+    // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-54-147-134-213.compute-1.amazonaws.com:3000";
     private Boolean isRunning;
-    private MediaPlayer mediaPlayer;
-    private String currentAudioPath;
-    private Context context;
 
     // Database
     private JSONArray jsonArray;
     private int currentIndex = 0;
+    private String currentAudioPath;
+    private Context context;
 
-    static {
-        System.loadLibrary("hanbackmusicapp");
-    }
 
     private ActivityMainBinding binding;
+    // player
+    ImageView mPlayMedia;
+    ImageView mPauseMedia;
+    SeekBar mMediaSeekBar;
+    TextView mRunTime;
+    TextView mTotalTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        context = this;
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -95,20 +74,42 @@ public class MainActivity extends AppCompatActivity {
             new FetchDataFromServerTask().execute();
         }
 
+        // initialize the player controls
+//        mMediaSeekBar = (SeekBar) findViewById(R.id.media_seekbar);
+//        mRunTime = (TextView) findViewById(R.id.run_time);
+//        mTotalTime = (TextView) findViewById(R.id.total_time);
+
         ImageButton playPauseBtn = findViewById(R.id.playPauseButton);
         ImageButton prevBtn = findViewById(R.id.prevBtn);
         ImageButton nextBtn = findViewById(R.id.nextBtn);
+
+//        WebView webView = findViewById(R.id.webVid);
+//        WebSettings webSettings = webView.getSettings();
+//        webSettings.setJavaScriptEnabled(true);
+//        webView.setWebViewClient(new WebViewClient());
+
+//        AudioWife.getInstance().init(mContext, uri)
+//                .useDefaultUi(mPlayerContainer, getLayoutInflater());
+
+        // initialize the player controls
+        ImageView mPlayMedia = findViewById(R.id.play);
+        ImageView mPauseMedia = findViewById(R.id.pause);
+        SeekBar mMediaSeekBar = (SeekBar) findViewById(R.id.media_seekbar);
+        TextView mRunTime = (TextView) findViewById(R.id.run_time);
+        TextView mTotalTime = (TextView) findViewById(R.id.total_time);
 
         Log.d("Initialization", "ALL COMPLETED");
 
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                pauseAudio();
+//                pauseAudio();
+                AudioWife.getInstance().pause();
                 isRunning = false;
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                playAudio();
+//                playAudio();
+                AudioWife.getInstance().play();
                 isRunning = true;
             }
         });
@@ -120,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
                     currentIndex = jsonArray.length() - 1;
                 }
                 displayCurrentItem();
-                playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
             }
         });
 
@@ -131,7 +131,6 @@ public class MainActivity extends AppCompatActivity {
                     currentIndex = 0;
                 }
                 displayCurrentItem();
-                playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
             }
         });
     }
@@ -210,7 +209,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             TextView titleDisplay = findViewById(R.id.titleDisplay);
             TextView channelNameDisplay = findViewById(R.id.channelNameDisplay);
-
+//            WebView webView = findViewById(R.id.webVid);
+            Log.d("Current item", "Trying to display items");
             JSONObject jsonObject = jsonArray.getJSONObject(currentIndex);
             String title = jsonObject.getString("title");
             String channelName = jsonObject.getString("channelName");
@@ -219,101 +219,68 @@ public class MainActivity extends AppCompatActivity {
             titleDisplay.setText(title);
             channelNameDisplay.setText(channelName);
 
-            downloadAudioFile(videoID);
-
+            String url = SERVER_URL + "/play/" + videoID;
+//            webView.loadUrl(url);
+            Log.d("DownloadAudioFile", "Video to download "+videoID);
             isRunning = false;
+            downloadAudioFile(videoID);
         } catch (JSONException e) {
             Log.e(TAG, "Error displaying current item: " + e.getMessage());
         }
     }
 
     private void downloadAudioFile(String videoID) {
-        new Thread(() -> {
             try {
-                URL url = new URL(SERVER_URL + "/play/" + videoID);
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
+            URL url = new URL(SERVER_URL + "/play/" + videoID);
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("GET");
 
-                File sdcard = Environment.getExternalStorageDirectory();
-                File file = new File(sdcard, videoID + ".mp3");
+            File sdcard = Environment.getExternalStorageDirectory();
+            File file = new File(sdcard, videoID + ".mp3");
 
-                FileOutputStream fileOutput = new FileOutputStream(file);
-                InputStream inputStream = urlConnection.getInputStream();
+            FileOutputStream fileOutput = new FileOutputStream(file);
+            InputStream inputStream = urlConnection.getInputStream();
 
-                byte[] buffer = new byte[1024];
-                int bufferLength;
+            byte[] buffer = new byte[1024];
+            int bufferLength;
 
-                while ((bufferLength = inputStream.read(buffer)) > 0) {
-                    fileOutput.write(buffer, 0, bufferLength);
-                }
-                fileOutput.close();
-
-                Log.d("DownloadAudioFile", "File downloaded to: " + file.getPath());
-
-                runOnUiThread(() -> {
-                    currentAudioPath = file.getPath();
-                    playAudio();
-                });
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Download Failed", Toast.LENGTH_SHORT).show());
+            while ((bufferLength = inputStream.read(buffer)) > 0) {
+                fileOutput.write(buffer, 0, bufferLength);
             }
-        }).start();
-    }
+            fileOutput.close();
 
-    private void playAudio() {
-        try {
-            if (mediaPlayer != null) {
-                mediaPlayer.reset();
-                mediaPlayer.release();
-            }
+            Log.d(TAG, "File downloaded to: " + file.getPath());
 
-            File file = new File(currentAudioPath);
-            if (!file.exists()) {
-                Log.e(TAG, "File not found: " + currentAudioPath);
-                Toast.makeText(this, "Audio file not found", Toast.LENGTH_SHORT).show();
-                return;
-            }
+//                runOnUiThread(() -> {
+//                    currentAudioPath = file.getPath();
+//                    initializeMediaPlayer(Uri.parse(currentAudioPath));
+//                });
 
-            Log.d(TAG, "Playing audio file: " + file.getAbsolutePath());
+            currentAudioPath = file.getPath();
+            initializeMediaPlayer(Uri.parse(currentAudioPath));
 
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource(file.getPath());
-
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    mediaPlayer.start();
-                    isRunning = true;
-
-                    ImageButton playPauseBtn = findViewById(R.id.playPauseButton);
-                    playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                }
-            });
-            mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-                @Override
-                public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e(TAG, "MediaPlayer error: " + what + ", extra: " + extra);
-                    Toast.makeText(MainActivity.this, "Error playing audio", Toast.LENGTH_SHORT).show();
-                    return false; // Return true if the error is handled, false otherwise
-                }
-            });
-            mediaPlayer.prepareAsync(); // Use prepareAsync for asynchronous preparation
-        } catch (IOException e) {
-            Log.e(TAG, "IOException while playing audio: " + e.getMessage());
-            Toast.makeText(this, "Error playing audio", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Log.e(TAG, "Error playing audio: " + e.getMessage());
-            Toast.makeText(this, "Error playing audio", Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+            Log.e(TAG, "Download failed: " + e.getMessage());
+            Toast.makeText(MainActivity.this, "Download Failed", Toast.LENGTH_SHORT).show();
         }
     }
 
+    private void initializeMediaPlayer(Uri audioUri) {
+        AudioWife.getInstance()
+                .init(mContext, audioUri)
+                .setPlayView(findViewById(R.id.play))
+                .setPauseView(findViewById(R.id.pause))
+                .setSeekBar((SeekBar) findViewById(R.id.media_seekbar))
+                .setRuntimeView((TextView) findViewById(R.id.run_time))
+                .setTotalTimeView((TextView) findViewById(R.id.total_time))
+                .useDefaultUi(binding.getRoot(), getLayoutInflater());
+    }
 
 
-    private void pauseAudio() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
-        }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        AudioWife.getInstance().release();
     }
 }
