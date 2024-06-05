@@ -1,8 +1,6 @@
 package com.example.hanbackmusicapp;
 // TODO: Sync timer with sound detection
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,14 +11,14 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.hanbackmusicapp.databinding.ActivityMainBinding;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-52-201-214-21.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-54-164-90-78.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
 
     // Timer
