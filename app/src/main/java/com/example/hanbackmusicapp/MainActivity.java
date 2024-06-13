@@ -5,7 +5,10 @@ import android.media.AudioRecord;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
@@ -47,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-54-164-90-78.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-204-236-202-165.compute-1.amazonaws.com:3000/data"; // TODO: Update address
     private Boolean isRunning;
     private Boolean isMute;
     private Boolean isVisible;
@@ -105,9 +108,26 @@ public class MainActivity extends AppCompatActivity {
         isVisible = true;
         playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
         // webView
-        webVideo.setWebViewClient(new WebViewClient());
         webVideo.getSettings().setJavaScriptEnabled(true);
+        webVideo.getSettings().setDomStorageEnabled(true);
         webVideo.setWebChromeClient(new WebChromeClient());
+        webVideo.setWebViewClient(new WebViewClient());
+        webVideo.getSettings().setLoadsImagesAutomatically(true);
+        webVideo.getSettings().setAllowFileAccess(true);
+        webVideo.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+        webVideo.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+        webVideo.getSettings().setPluginState(WebSettings.PluginState.ON);
+        webVideo.getSettings().setRenderPriority(WebSettings.RenderPriority.HIGH);
+        webVideo.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+        webVideo.requestFocus(View.FOCUS_DOWN);
+
+        webVideo.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                // Consume the touch event without passing it to the WebView
+                return true;
+            }
+        });
 
         Log.d("Initialization", "webView complete");
         Log.d("Initialization", "ALL COMPLETED");
@@ -140,21 +160,15 @@ public class MainActivity extends AppCompatActivity {
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                webVideo.loadUrl("javascript:pauseVideo()");
-//                stopAudioRecording();
+                webVideo.post(() -> webVideo.loadUrl("javascript:pauseVideo()"));
                 isRunning = false;
-//                stopTimer();
-                runDotMatrixInBackground("Pausing");
             } else {
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                webVideo.loadUrl("javascript:playVideo()");
+                webVideo.post(() -> webVideo.loadUrl("javascript:playVideo()"));
                 isRunning = true;
-//                timerHandler.post(timerRunnable);
-//                startTimer();
-//                startAudioRecording();
-                runDotMatrixInBackground("Playing");
             }
         });
+
 
         // previous Button
         prevBtn.setOnClickListener(view -> {
@@ -226,8 +240,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void VideoDisplay(String videoID) {
-
-        // TODO: figure out how to {autoplay + unmute}
         String video = "<html>" +
                 "<body style='margin:0;padding:0;'>" +
                 "<iframe id=\"player\" width=\"100%\" height=\"100%\" " +
@@ -248,17 +260,16 @@ public class MainActivity extends AppCompatActivity {
                 "}" +
                 "function playVideo() {" +
                 "  player.playVideo();" +
-                "  player.unMute();" +
                 "}" +
-                "function MuteVideo() {" +
-                "  player.mute();" +
+                "function pauseVideo() {" +
+                "  player.pauseVideo();" +
+                //"  player.unMute();" +
                 "}" +
                 "function unMuteVideo() {" +
                 "  player.unMute();" +
                 "}" +
-                "function pauseVideo() {" +
-                "  player.pauseVideo();" +
-                "  player.unMute();" +
+                "function MuteVideo() {" +
+                "  player.mute();" +
                 "}" +
                 "</script>" +
                 "</body>" +
