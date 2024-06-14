@@ -112,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
                     handler.removeCallbacks(runnable); // Stop updating the timer
                 }
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
+                runDotMatrixInBackground("Pausing");
                 isRunning = false;
             } else {
                 if (mediaPlayer != null) {
@@ -121,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 isRunning = true;
+                runDotMatrixInBackground("Playing");
             }
         });
 
