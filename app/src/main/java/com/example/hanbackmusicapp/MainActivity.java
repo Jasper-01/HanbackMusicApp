@@ -1,7 +1,9 @@
 package com.example.hanbackmusicapp;
 
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -20,8 +22,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -46,13 +50,14 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
 
     /* variables */
-    private static final String SERVER_URL = "http://ec2-54-226-172-53.compute-1.amazonaws.com:3000/data"; // TODO: Update address
+    private static final String SERVER_URL = "http://ec2-54-226-172-53.compute-1.amazonaws.com:3000"; // TODO: Update address
     private Boolean isRunning;
     private Boolean isMute;
 
     // Database
     private JSONArray jsonArray;
     private int currentIndex = 0;
+    private String currentAudioPath;
     private WebView webVideo;
 
     // Used to load the 'hanbackmusicapp' library on application startup.
@@ -61,6 +66,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ActivityMainBinding binding;
+    private MediaPlayer mediaPlayer;
+    private int pausedPosition = 0; // Added to store the paused position
+    //String filePath = Environment.getExternalStorageDirectory().getPath() + "/bluetooth/Bo Burnham - Lower Your Expectations Song.mp3";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,24 +90,22 @@ public class MainActivity extends AppCompatActivity {
 
         /* Initialization */
         isRunning = true;
-        isMute = true;
+        isMute = false;
         playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-        // webView
-        webVideo.getSettings().setJavaScriptEnabled(true);
-        webVideo.getSettings().setDomStorageEnabled(true);
-        webVideo.setWebChromeClient(new WebChromeClient());
-        webVideo.setWebViewClient(new WebViewClient());
 
-        webVideo.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                // Consume the touch event without passing it to the WebView
-                return true;
-            }
-        });
-
-        Log.d("Initialization", "webView complete");
         Log.d("Initialization", "ALL COMPLETED");
+//        if (mediaPlayer == null) {
+//            mediaPlayer = new MediaPlayer();
+//            try {
+//                mediaPlayer.setDataSource(filePath);
+//                mediaPlayer.prepare();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+//            mediaPlayer.start();
+//        }
 
         // Database connection
         new FetchDataFromServerTask().execute();
@@ -108,16 +114,21 @@ public class MainActivity extends AppCompatActivity {
         // play & pause Button
         playPauseBtn.setOnClickListener(view -> {
             if (isRunning) {
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    pausedPosition = mediaPlayer.getCurrentPosition(); // Store the current position
+                }
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
-                webVideo.post(() -> webVideo.loadUrl("javascript:pauseVideo()"));
                 isRunning = false;
             } else {
+                if (mediaPlayer != null) {
+                    mediaPlayer.seekTo(pausedPosition); // Resume from the stored position
+                    mediaPlayer.start();
+                }
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
-                webVideo.post(() -> webVideo.loadUrl("javascript:playVideo()"));
                 isRunning = true;
             }
         });
-
 
         // previous Button
         prevBtn.setOnClickListener(view -> {
@@ -148,57 +159,75 @@ public class MainActivity extends AppCompatActivity {
 
         // mute Button
         muteBtn.setOnClickListener(view -> {
-            if (isMute){
+            if (isMute) {
+                if (mediaPlayer != null) {
+                    mediaPlayer.setVolume(1.0f, 1.0f);
+                }
                 isMute = false;
                 muteBtn.setImageResource(R.drawable.baseline_volume_on_icon);
-                webVideo.loadUrl("javascript:unMuteVideo()");
                 runDotMatrixInBackground("Unmute");
-            } else{
+            } else {
+                if (mediaPlayer != null) {
+                    mediaPlayer.setVolume(0.0f, 0.0f);
+                }
                 isMute = true;
                 muteBtn.setImageResource(R.drawable.baseline_volume_mute_icon);
-                webVideo.loadUrl("javascript:MuteVideo()");
                 runDotMatrixInBackground("Mute");
             }
         });
     }
 
-    public void VideoDisplay(String videoID) {
-        String video = "<html>" +
-                "<body style='margin:0;padding:0;'>" +
-                "<iframe id=\"player\" width=\"100%\" height=\"100%\" " +
-                "src=\"https://www.youtube.com/embed/" + videoID + "?enablejsapi=1&autoplay=1&mute=1" +
-                "\" frameborder=\"0\" allowfullscreen></iframe>" +
-                "<script src=\"https://www.youtube.com/iframe_api\"></script>" +
-                "<script type=\"text/javascript\">" +
-                "var player;" +
-                "function onYouTubeIframeAPIReady() {" +
-                "  player = new YT.Player('player', {" +
-                "    events: {" +
-                "      'onReady': onPlayerReady" +
-                "    }" +
-                "  });" +
-                "}" +
-                "function onPlayerReady(event) {" +
-                "  event.target.playVideo();" +
-                "}" +
-                "function playVideo() {" +
-                "  player.playVideo();" +
-                "}" +
-                "function pauseVideo() {" +
-                "  player.pauseVideo();" +
-                //"  player.unMute();" +
-                "}" +
-                "function unMuteVideo() {" +
-                "  player.unMute();" +
-                "}" +
-                "function MuteVideo() {" +
-                "  player.mute();" +
-                "}" +
-                "</script>" +
-                "</body>" +
-                "</html>";
-        isRunning = true;
-        webVideo.loadDataWithBaseURL("https://www.youtube.com", video, "text/html", "utf-8", null);
+    /* mp3 downloads */
+    private void downloadAudioFile(String videoID) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(SERVER_URL + "/play/" + videoID);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                File sdcard = Environment.getExternalStorageDirectory();
+                File file = new File(sdcard, videoID + ".mp3");
+
+                FileOutputStream fileOutput = new FileOutputStream(file);
+                InputStream inputStream = urlConnection.getInputStream();
+
+                byte[] buffer = new byte[1024];
+                int bufferLength;
+
+                while ((bufferLength = inputStream.read(buffer)) > 0) {
+                    fileOutput.write(buffer, 0, bufferLength);
+                }
+                fileOutput.close();
+
+                Log.d("DownloadAudioFile", "File downloaded to: " + file.getPath());
+
+                runOnUiThread(() -> {
+                    currentAudioPath = file.getPath();
+                    playAudio();
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+    private void playAudio() {
+        if (currentAudioPath != null) {
+            if (mediaPlayer != null) {
+                mediaPlayer.reset(); // Reset the MediaPlayer to ensure new source is set
+            } else {
+                mediaPlayer = new MediaPlayer();
+            }
+            try {
+                mediaPlayer.setDataSource(currentAudioPath);
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            Log.d("MP3", "No audio to play");
+        }
     }
 
     /* Database functions */
@@ -211,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
             BufferedReader reader = null;
 
             try {
-                URL url = new URL(SERVER_URL);
+                URL url = new URL(SERVER_URL+"/data");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
 
@@ -272,7 +301,7 @@ public class MainActivity extends AppCompatActivity {
             String title = jsonObject.getString("title");
             String channelName = jsonObject.getString("channelName");
             String videoID = jsonObject.getString("videoId");
-            VideoDisplay(videoID);
+            downloadAudioFile(videoID);
 
             // set texts
             textLCDout(title, channelName);
@@ -280,6 +309,14 @@ public class MainActivity extends AppCompatActivity {
             channelNameDisplay.setText(channelName);
         } catch (JSONException e) {
             Log.e(TAG, "Error displaying current item: " + e.getMessage());
+        }
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
         }
     }
 
