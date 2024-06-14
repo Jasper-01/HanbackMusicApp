@@ -4,6 +4,7 @@ import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -59,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private int currentIndex = 0;
     private String currentAudioPath;
     private WebView webVideo;
+    private TextView timeElapsedDisplay;
 
     // Used to load the 'hanbackmusicapp' library on application startup.
     static {
@@ -68,7 +70,8 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private MediaPlayer mediaPlayer;
     private int pausedPosition = 0; // Added to store the paused position
-    //String filePath = Environment.getExternalStorageDirectory().getPath() + "/bluetooth/Bo Burnham - Lower Your Expectations Song.mp3";
+    private Handler handler;
+    private Runnable runnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         ImageButton prevBtn = findViewById(R.id.prevBtn);
         ImageButton nextBtn = findViewById(R.id.nextBtn);
         ImageButton muteBtn = findViewById(R.id.muteBtn);
+        timeElapsedDisplay = findViewById(R.id.timeElapsedDisplay);
         // WebView
         webVideo = findViewById(R.id.webVid);
 
@@ -94,18 +98,6 @@ public class MainActivity extends AppCompatActivity {
         playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
 
         Log.d("Initialization", "ALL COMPLETED");
-//        if (mediaPlayer == null) {
-//            mediaPlayer = new MediaPlayer();
-//            try {
-//                mediaPlayer.setDataSource(filePath);
-//                mediaPlayer.prepare();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
-//            mediaPlayer.start();
-//        }
 
         // Database connection
         new FetchDataFromServerTask().execute();
@@ -117,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
                 if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
                     pausedPosition = mediaPlayer.getCurrentPosition(); // Store the current position
+                    handler.removeCallbacks(runnable); // Stop updating the timer
                 }
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_play_icon);
                 isRunning = false;
@@ -124,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 if (mediaPlayer != null) {
                     mediaPlayer.seekTo(pausedPosition); // Resume from the stored position
                     mediaPlayer.start();
+                    updateSeekBar(); // Start updating the timer again
                 }
                 playPauseBtn.setImageResource(R.drawable.ic_baseline_pause_icon);
                 isRunning = true;
@@ -132,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
         // previous Button
         prevBtn.setOnClickListener(view -> {
+            pausedPosition = 0;
             if (jsonArray != null && jsonArray.length() > 0) {
                 currentIndex--;
                 if (currentIndex < 0) {
@@ -145,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
 
         // next Button
         nextBtn.setOnClickListener(view -> {
-//            pausedTimeElapsed = 0;
+            pausedPosition = 0;
             if (jsonArray != null && jsonArray.length() > 0) {
                 currentIndex++;
                 if (currentIndex >= jsonArray.length()) {
@@ -222,12 +217,34 @@ public class MainActivity extends AppCompatActivity {
                 mediaPlayer.setDataSource(currentAudioPath);
                 mediaPlayer.prepare();
                 mediaPlayer.start();
+                updateSeekBar(); // Start updating the timer
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
             Log.d("MP3", "No audio to play");
         }
+    }
+
+    private void updateSeekBar() {
+        handler = new Handler();
+        handler.postDelayed(runnable = new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    int currentPosition = mediaPlayer.getCurrentPosition();
+                    timeElapsedDisplay.setText(millisecondsToTime(currentPosition));
+                    handler.postDelayed(this, 1000); // Update every second
+                }
+            }
+        }, 1000);
+    }
+
+    private String millisecondsToTime(int milliseconds) {
+        int seconds = milliseconds / 1000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     /* Database functions */
