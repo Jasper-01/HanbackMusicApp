@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music App Page</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Our Website</h1>
+        <div id="loginContainer" class="login-container">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <label for="userId">User ID:</label><br>
+                <input type="text" id="userId" name="userId"><br>
+                <label for="password">Password:</label><br>
+                <input type="password" id="password" name="password"><br><br>
+                <input type="submit" value="Login">
+            </form>
+            <div id="loginError" class="error-message" style="display:none;"></div>
+        </div>
+        <div id="searchContainer" class="search-container" style="display:none;">
+            <input type="text" id="searchQuery" placeholder="Search...">
+            <button onclick="searchYouTube()">Search</button>
+        </div>
+        <div id="resultsContainer" class="results-container"></div>
+        <button id="saveSelected" style="display:none;" onclick="saveSelected()">Save Selected</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

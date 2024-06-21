@@ -15,17 +15,17 @@
         app:avSpeed="normal"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!--    <TextView-->
-<!--        android:id="@+id/timeElapsedDisplay"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_marginLeft="30dp"-->
-<!--        android:layout_marginStart="30dp"-->
-<!--        android:layout_marginTop="20dp"-->
-<!--        android:text="@string/reset_timer_display"-->
-<!--        android:textSize="15sp"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toBottomOf="@id/webVid" />-->
+    <TextView
+        android:id="@+id/timeElapsedDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/reset_timer_display"
+        android:textSize="15sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/webVid" />
 
     <WebView
         android:id="@+id/webVid"
@@ -98,7 +98,7 @@
         android:id="@+id/muteBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:srcCompat="@drawable/baseline_volume_mute_icon"
+        app:srcCompat="@drawable/baseline_volume_on_icon"
         app:layout_constraintTop_toBottomOf="@id/playPauseButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/visualizerBtn"/>
